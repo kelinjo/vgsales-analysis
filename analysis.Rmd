@@ -1,0 +1,162 @@
+---
+title: "Video Game Sales Analysis"
+author: "Dejan Kelecevic"
+date: "09-12-2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include=T, echo=T, warning=F, error=T, message=F)
+```
+
+# Introduction
+
+Video games have become a significant part of the entertainment industry, generating billions of dollars in revenue each year. Understanding the trends and patterns in video game sales can provide valuable insights for developers, publishers, marketers, and researchers.
+
+In this analysis, we use the Video Game Sales dataset from Kaggle, which includes information on game titles, platforms, release years, genres, publishers, and sales figures across different regions (North America, Europe, Japan, and others) as well as global sales.
+
+The goals of this analysis are to explore the dataset, clean the data, perform analysis, and visualize the findings to gain insights into the video game market.
+
+---
+
+# Setup
+
+```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+
+df <- read_csv("vgsales.csv")
+```
+
+---
+
+# Data Exploration
+
+```{r}
+str(df)
+summary(df)
+head(df)
+```
+
+---
+
+# Data Cleaning
+
+```{r}
+# Check missing values
+colSums(is.na(df))
+
+# Remove missing and duplicate rows
+df_cleaned <- na.omit(df)
+df_cleaned <- df_cleaned[!duplicated(df_cleaned), ]
+
+# Ensure correct data types
+df_cleaned$Rank         <- as.integer(df_cleaned$Rank)
+df_cleaned$Year         <- as.integer(df_cleaned$Year)
+df_cleaned$NA_Sales     <- as.numeric(df_cleaned$NA_Sales)
+df_cleaned$EU_Sales     <- as.numeric(df_cleaned$EU_Sales)
+df_cleaned$JP_Sales     <- as.numeric(df_cleaned$JP_Sales)
+df_cleaned$Other_Sales  <- as.numeric(df_cleaned$Other_Sales)
+df_cleaned$Global_Sales <- as.numeric(df_cleaned$Global_Sales)
+
+cat("Rows after cleaning:", nrow(df_cleaned), "\n")
+```
+
+---
+
+# Analysis & Visualisation
+
+## Games Released Per Year
+
+```{r}
+games_per_year <- df_cleaned %>%
+  count(Year) %>%
+  rename(Frequency = n)
+
+ggplot(games_per_year, aes(x = Year, y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#2563EB") +
+  labs(title = "Number of Games Released Per Year",
+       x = "Year", y = "Number of Games") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Top 10 Games by Global Sales
+
+```{r}
+top_10_games <- df_cleaned %>%
+  arrange(desc(Global_Sales)) %>%
+  slice(1:10)
+
+ggplot(top_10_games, aes(x = reorder(Name, Global_Sales), y = Global_Sales)) +
+  geom_bar(stat = "identity", fill = "#16A34A") +
+  coord_flip() +
+  labs(title = "Top 10 Games by Global Sales",
+       x = "Game", y = "Global Sales (millions)") +
+  theme_minimal()
+```
+
+## Total Sales by Region
+
+```{r}
+region_sales <- data.frame(
+  Region = c("North America", "Europe", "Japan", "Other"),
+  Sales  = c(sum(df_cleaned$NA_Sales), sum(df_cleaned$EU_Sales),
+             sum(df_cleaned$JP_Sales), sum(df_cleaned$Other_Sales))
+)
+
+ggplot(region_sales, aes(x = reorder(Region, -Sales), y = Sales)) +
+  geom_bar(stat = "identity", fill = "#DC2626") +
+  labs(title = "Total Sales by Region",
+       x = "Region", y = "Total Sales (millions)") +
+  theme_minimal()
+```
+
+## Top 10 Genres by Global Sales
+
+```{r}
+genre_sales <- df_cleaned %>%
+  group_by(Genre) %>%
+  summarise(Total_Sales = sum(Global_Sales)) %>%
+  arrange(desc(Total_Sales)) %>%
+  slice(1:10)
+
+ggplot(genre_sales, aes(x = reorder(Genre, Total_Sales), y = Total_Sales)) +
+  geom_bar(stat = "identity", fill = "#9333EA") +
+  coord_flip() +
+  labs(title = "Top 10 Genres by Global Sales",
+       x = "Genre", y = "Total Sales (millions)") +
+  theme_minimal()
+```
+
+## Top 10 Publishers by Global Sales
+
+```{r}
+publisher_sales <- df_cleaned %>%
+  group_by(Publisher) %>%
+  summarise(Total_Sales = sum(Global_Sales)) %>%
+  arrange(desc(Total_Sales)) %>%
+  slice(1:10)
+
+ggplot(publisher_sales, aes(x = reorder(Publisher, Total_Sales), y = Total_Sales)) +
+  geom_bar(stat = "identity", fill = "#EA580C") +
+  coord_flip() +
+  labs(title = "Top 10 Publishers by Global Sales",
+       x = "Publisher", y = "Total Sales (millions)") +
+  theme_minimal()
+```
+
+---
+
+# Conclusion
+
+The analysis of the Video Game Sales dataset revealed several key insights:
+
+- Game releases peaked in the mid-2000s to early 2010s, reflecting the industry's rapid growth during that period.
+- The top 10 best-selling games are dominated by major franchises such as Wii Sports, GTA, and Mario, highlighting the power of established IPs.
+- North America is by far the largest market, followed by Europe and Japan.
+- Action and Sports are the most commercially successful genres globally.
+- Nintendo stands out as the dominant publisher by total global sales, followed by Electronic Arts and Activision.
+
+Further analysis could explore platform-specific trends, the rise of specific genres over time, or the correlation between critic scores and sales performance.
